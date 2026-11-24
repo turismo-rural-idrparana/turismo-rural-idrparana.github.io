@@ -5,8 +5,9 @@
  *  - "Caminhadas IDR - AAAA" (uma por ano), abas:
  *      eventos               cadastro (inclui senha_gestor, privada)
  *      inscricoes            inscrições feitas neste sistema (criada na primeira)
- *      inscricoes_ecobooking histórico migrado (somente leitura)
- *      respostas_ecobooking  respostas da ficha migradas (somente leitura)
+ *  - "Caminhadas IDR - AAAA - inscritos N": histórico do Ecobooking em partes
+ *    (aba inscricoes_ecobooking, cada evento inteiro numa parte; somente leitura)
+ *  - subpasta "Respostas da ficha (Ecobooking)": arquivo, não lido pelo backend
  *  - "Caminhadas IDR - config", aba config (chave | valor): senha_admin.
  * As planilhas não são compartilhadas; o web app roda como o dono e só devolve
  * campos públicos, ou dados de inscritos para quem tem a senha do evento.
@@ -84,18 +85,34 @@ function responder(fn) {
 
 function planilhas() {
   const cache = CacheService.getScriptCache();
-  const hit = cache.get('planilhas_v4');
+  const hit = cache.get('planilhas_v5');
   if (hit) return JSON.parse(hit);
   const it = DriveApp.getFolderById(propriedade('FOLDER_ID')).getFilesByType(MimeType.GOOGLE_SHEETS);
+  // mapa: { '2025': id, 'config': id, 'insc_2025': [ids das partes do histórico] }
   const mapa = {};
   while (it.hasNext()) {
     const f = it.next();
     if (f.isTrashed()) continue; // a pasta também lista o que está na lixeira
-    const m = f.getName().match(/^Caminhadas IDR - (\d{4}|config)$/);
-    if (m) mapa[m[1]] = f.getId();
+    const m = f.getName().match(/^Caminhadas IDR - (\d{4}|config)(?: - inscritos \d+)?$/);
+    if (!m) continue;
+    if (/ - inscritos \d+$/.test(f.getName())) {
+      (mapa['insc_' + m[1]] = mapa['insc_' + m[1]] || []).push(f.getId());
+    } else {
+      mapa[m[1]] = f.getId();
+    }
   }
-  if (Object.keys(mapa).length) cache.put('planilhas_v4', JSON.stringify(mapa), 600);
+  if (Object.keys(mapa).length) cache.put('planilhas_v5', JSON.stringify(mapa), 600);
   return mapa;
+}
+
+/** Linhas históricas (Ecobooking) do evento, procurando em todas as partes do ano. */
+function historicoDoEvento(ano, id) {
+  const partes = planilhas()['insc_' + ano] || [];
+  for (const pid of partes) {
+    const linhas = linhasDoEvento(SpreadsheetApp.openById(pid).getSheetByName('inscricoes_ecobooking'), 1, id);
+    if (linhas.length) return linhas; // um evento fica inteiro numa só parte
+  }
+  return [];
 }
 
 function abrirAno(ano) {
@@ -270,7 +287,7 @@ function gestorInscritos(d) {
     whatsapp: '', documento: r.documento, nascimento: r.nascimento, cidade: r.cidade + (r.uf ? '/' + r.uf : ''),
     data_inscricao: r.data_inscricao, chegou: r.chegou_em,
   }));
-  const antigos = linhasDoEvento(plan.getSheetByName('inscricoes_ecobooking'), 1, id).map(r => ({
+  const antigos = historicoDoEvento(d.ano, id).map(r => ({
     origem: 'ecobooking', numero: r.inscricao, nome: r.nome, email: r.email, telefone: r.telefone,
     whatsapp: r.whatsapp, documento: r.documento, nascimento: r.nascimento, cidade: r.cidade,
     data_inscricao: r.data_inscricao, chegou: r.chegou,
@@ -330,7 +347,7 @@ function propriedade(k) {
 /** Rodar no editor depois de importar ou renomear planilhas. */
 function limparCache() {
   const c = CacheService.getScriptCache();
-  c.remove('planilhas_v4');
+  c.remove('planilhas_v5');
   c.removeAll(anos().map(a => 'ev_' + a));
 }
 
