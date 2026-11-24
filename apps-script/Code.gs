@@ -83,9 +83,10 @@ function responder(fn) {
 
 // ---------- Planilhas ----------
 
-function planilhas() {
+/** Mapa das planilhas da pasta (cache de 10 min; `forcar` relê a pasta). */
+function planilhas(forcar) {
   const cache = CacheService.getScriptCache();
-  const hit = cache.get('planilhas_v5');
+  const hit = forcar ? null : cache.get('planilhas_v5');
   if (hit) return JSON.parse(hit);
   const it = DriveApp.getFolderById(propriedade('FOLDER_ID')).getFilesByType(MimeType.GOOGLE_SHEETS);
   // mapa: { '2025': id, 'config': id, 'insc_2025': [ids das partes do histórico] }
@@ -116,7 +117,8 @@ function historicoDoEvento(ano, id) {
 }
 
 function abrirAno(ano) {
-  const id = planilhas()[ano];
+  // Ano ausente do cache pode ser planilha recém-criada: relê a pasta uma vez.
+  const id = planilhas()[ano] || planilhas(true)[ano];
   if (!id) throw new Error('Não há dados para ' + ano + '.');
   return SpreadsheetApp.openById(id);
 }

@@ -40,6 +40,28 @@ function isoDeBr(s) { const m = String(s).match(/^(\d{2})\/(\d{2})\/(\d{4})/); r
 function km(m) { const n = Number(String(m).replace(',', '.')); if (!n) return ''; return (n > 200 ? n / 1000 : n).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' km'; }
 function vagas(v) { const n = Number(v); return n && n < 99999 ? num(n) : ''; }
 function cidade(e) { return String(e.localizacao || '').replace(/ - Brasil$/, ''); }
+
+// Textos vindos do Ecobooking são HTML de terceiros: viram texto puro (nunca innerHTML).
+function textoDeHtml(html) {
+  const marcado = String(html || '').replace(/<br\s*\/?>|<\/(p|div|li|h\d)>/gi, '\n');
+  const doc = new DOMParser().parseFromString(marcado, 'text/html');
+  doc.querySelectorAll('script,style').forEach(n => n.remove());
+  return (doc.body.textContent || '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+// Link do mapa incorporado (Google Maps) no "como chegar", se houver.
+function linkDoMapa(html) {
+  const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
+  const src = doc.querySelector('iframe[src*="google.com/maps"]')?.getAttribute('src') || '';
+  return /^https:\/\/(www\.)?google\.com\/maps/.test(src) ? src : '';
+}
+
+function blocoTexto(titulo, html) {
+  const t = textoDeHtml(html), mapa = linkDoMapa(html);
+  if (!t && !mapa) return '';
+  return `<h3>${titulo}</h3>${t ? `<p class="texto">${esc(t)}</p>` : ''}`
+    + (mapa ? `<p><a href="${esc(mapa)}" target="_blank" rel="noopener">Ver no mapa</a></p>` : '');
+}
 function abertas(e) {
   const hoje = new Date().toISOString().slice(0, 10);
   return e.status === 'producao' && (!e.evento_data_inicio_inscricoes || e.evento_data_inicio_inscricoes <= hoje)
@@ -97,8 +119,8 @@ async function abrirEvento(id) {
       <span class="tag ${esc(e.status)}">${ROTULO[e.status] || esc(e.status)}</span>
       ${e.evento_cancelamento_motivo && e.status === 'cancelado' ? `<p>${esc(e.evento_cancelamento_motivo)}</p>` : ''}
       <dl>${linhas.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
-      ${e.evento_como_chegar ? `<h3>Como chegar</h3><p class="texto">${esc(e.evento_como_chegar)}</p>` : ''}
-      ${e.evento_observacao ? `<h3>Observações</h3><p class="texto">${esc(e.evento_observacao)}</p>` : ''}
+      ${blocoTexto('Como chegar', e.evento_como_chegar)}
+      ${blocoTexto('Observações', e.evento_observacao)}
       ${abertas(e) ? ficha(e) : ''}`;
     const form = corpo.querySelector('form');
     if (form) form.addEventListener('submit', ev => enviarFicha(ev, e, ano));
@@ -117,7 +139,7 @@ function ficha(e) {
     <label>CPF${e.evento_campo_documento_cpf_obrigatorio === 'sim' ? '' : ' (opcional)'}<input name="documento" inputmode="numeric" ${e.evento_campo_documento_cpf_obrigatorio === 'sim' ? 'required' : ''}></label>
     <label>Cidade<input name="cidade" required autocomplete="address-level2"></label>
     <label>UF<input name="uf" required maxlength="2" value="PR"></label>
-    ${e.evento_termo_visitante ? `<details class="inteira"><summary>${esc(e.evento_titulo_do_termo || 'Termo de responsabilidade')}</summary><p class="texto">${esc(e.evento_termo_visitante)}</p></details>` : ''}
+    ${e.evento_termo_visitante ? `<details class="inteira"><summary>${esc(e.evento_titulo_do_termo || 'Termo de responsabilidade')}</summary><p class="texto">${esc(textoDeHtml(e.evento_termo_visitante))}</p></details>` : ''}
     <label class="chk inteira"><input type="checkbox" name="aceite_termo" required> Li e aceito o termo do evento e autorizo o uso dos meus dados para a organização desta caminhada (LGPD).</label>
     <label class="chk inteira"><input type="checkbox" name="receber"> Quero receber avisos de outras caminhadas.</label>
     <div class="inteira"><button class="prim" type="submit">Confirmar inscrição</button><div class="msg" role="status"></div></div>
