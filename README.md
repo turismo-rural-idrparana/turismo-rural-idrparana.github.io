@@ -26,4 +26,5 @@ Só campos públicos saem pelo `doGet`. Dados de inscritos exigem a senha do eve
   datas `evento_data_inicio_inscricoes`/`evento_data_termino_inscricoes` em AAAA-MM-DD, `senha_gestor` com 10+ caracteres).
 - Ano novo: criar a planilha `Caminhadas IDR - AAAA` com a aba `eventos` e o mesmo cabeçalho.
 - Depois de criar/renomear planilhas, rodar `limparCache` no editor (ou esperar 10 min).
+- Ao mudar `app.js`/`gestor.js`, trocar o `?v=` no `<script>` de `index.html`/`gestor.html` (cache do navegador).
 - Deploy: `cd apps-script && clasp push && clasp update-deployment <id>`. Autoteste: rodar `testes` no editor.
