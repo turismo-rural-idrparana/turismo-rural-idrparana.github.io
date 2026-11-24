@@ -18,8 +18,12 @@ let eventos = [];
 
 async function api(params) {
   if (!API_URL) throw new Error('Backend ainda não configurado.');
-  const r = await fetch(API_URL + '?' + new URLSearchParams(params));
-  const j = await r.json();
+  let j;
+  try {
+    j = await (await fetch(API_URL + '?' + new URLSearchParams(params))).json();
+  } catch {
+    throw new Error('Não foi possível conectar ao servidor. Tente novamente em instantes.');
+  }
   if (!j.ok) throw new Error(j.erro);
   return j.dados;
 }
