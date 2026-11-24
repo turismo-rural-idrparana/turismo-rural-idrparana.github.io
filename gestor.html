@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Área do gestor · Caminhadas na Natureza</title>
+<style>
+  :root{--mata:#1f3d2b;--mata-2:#2f5a3f;--palha:#f6f1e6;--papel:#fffdf8;--terra:#b4622d;--cinza:#6b706c;--linha:#e3dccb}
+  *{box-sizing:border-box}
+  body{margin:0;font:400 16px/1.5 "Source Sans 3",system-ui,sans-serif;background:var(--palha);color:#1b1f1c}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px}
+  header{background:var(--mata);color:#fff}
+  header .wrap{display:flex;justify-content:space-between;align-items:center;padding:14px 20px}
+  header a{color:#fff}
+  h1{font-family:Georgia,serif;font-size:1.4rem;margin:0}
+  h2{font-family:Georgia,serif;margin:.2em 0}
+  .caixa{background:var(--papel);border:1px solid var(--linha);border-radius:14px;padding:20px;margin:18px 0}
+  form{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+  label{display:flex;flex-direction:column;font-size:.88rem;font-weight:600;gap:4px}
+  input,select{font:inherit;padding:8px 10px;border:1px solid var(--linha);border-radius:9px;background:#fff}
+  button{font:inherit;font-weight:700;border:none;border-radius:999px;padding:9px 16px;cursor:pointer;background:var(--mata);color:#fff}
+  button.sec{background:#e6eedd;color:var(--mata-2)}
+  button:disabled{opacity:.6;cursor:wait}
+  .msg{font-weight:600;margin-top:8px}.erro{color:#a1301b}.ok{color:var(--mata-2)}
+  .barra{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}
+  .barra input{flex:1;min-width:220px}
+  .kpis{display:flex;gap:24px;flex-wrap:wrap;color:var(--cinza)}
+  .kpis b{font-size:1.5rem;color:var(--mata);display:block}
+  table{width:100%;border-collapse:collapse;background:var(--papel);font-size:.93rem}
+  th,td{padding:7px 8px;border-bottom:1px solid var(--linha);text-align:left;vertical-align:top}
+  th{position:sticky;top:0;background:#efe9da}
+  td.chk{white-space:nowrap}
+  .lgpd{font-size:.85rem;color:#8a3d12;background:#f8ebe2;border-radius:10px;padding:10px 12px}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>Área do gestor</h1><a href="./">Voltar ao site</a></div></header>
+<main class="wrap">
+
+  <section class="caixa" id="entrar">
+    <h2>Entrar no evento</h2>
+    <p>Use o ano, o código do evento e a senha enviada pelo IDR-Paraná.</p>
+    <form id="f-entrar">
+      <label>Ano<input name="ano" required inputmode="numeric" pattern="\d{4}" size="6"></label>
+      <label>Código do evento<input name="evento_id" required inputmode="numeric" size="10"></label>
+      <label>Senha<input name="senha" type="password" required minlength="6" autocomplete="current-password"></label>
+      <button type="submit">Entrar</button>
+    </form>
+    <div class="msg" id="m-entrar" role="status"></div>
+  </section>
+
+  <section id="painel" hidden>
+    <div class="caixa">
+      <h2 id="ev-nome"></h2>
+      <div id="ev-meta" style="color:var(--cinza)"></div>
+      <p class="lgpd">Dados protegidos pela LGPD (Lei nº 13.709/2018). Use somente para a organização deste evento e não repasse a terceiros.</p>
+      <div class="kpis" id="kpis"></div>
+    </div>
+
+    <div class="caixa">
+      <h2>Inscrever na mesa</h2>
+      <form id="f-mesa">
+        <label>Nome<input name="nome" required minlength="3"></label>
+        <label>E-mail<input name="email" type="email" required></label>
+        <label>Celular<input name="telefone" required></label>
+        <label>Nascimento<input name="nascimento" type="date" required></label>
+        <label>CPF<input name="documento" inputmode="numeric"></label>
+        <label>Cidade<input name="cidade" required></label>
+        <label>UF<input name="uf" required maxlength="2" value="PR" size="3"></label>
+        <label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" name="aceite_termo" required> Aceitou o termo</label>
+        <button type="submit">Inscrever e marcar chegada</button>
+      </form>
+      <div class="msg" id="m-mesa" role="status"></div>
+    </div>
+
+    <div class="caixa">
+      <h2>Inscritos</h2>
+      <div class="barra">
+        <input id="busca" type="search" placeholder="Buscar por nome, número, cidade ou e-mail">
+        <select id="filtro"><option value="">Todos</option><option value="sim">Chegaram</option><option value="nao">Não chegaram</option></select>
+        <button class="sec" id="b-csv" type="button">Baixar CSV</button>
+        <button class="sec" id="b-atualizar" type="button">Atualizar</button>
+      </div>
+      <div class="msg" id="m-lista" role="status"></div>
+      <div style="max-height:70vh;overflow:auto"><table>
+        <thead><tr><th>Nº</th><th>Nome</th><th>Cidade</th><th>Nascimento</th><th>Telefone</th><th>Inscrição</th><th>Chegada</th></tr></thead>
+        <tbody id="corpo"></tbody>
+      </table></div>
+    </div>
+  </section>
+</main>
+<script src="gestor.js"></script>
+</body>
+</html>
