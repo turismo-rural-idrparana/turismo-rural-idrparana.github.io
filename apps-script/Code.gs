@@ -46,6 +46,7 @@ function doGet(e) {
   const p = (e && e.parameter) || {};
   return responder(() => {
     if (p.acao === 'anos') return anos();
+    if (p.acao === 'config') return { inscricoes_site: inscricoesSiteLigadas() };
     if (p.acao === 'eventos') return eventos(exigirAno(p.ano));
     if (p.acao === 'evento') return evento(exigirAno(p.ano), String(p.id || ''));
     throw new Error('Ação inválida.');
@@ -181,6 +182,10 @@ function evento(ano, id) {
 
 function inscrever(d, origem) {
   const ano = exigirAno(d.ano);
+  // Até a virada oficial, as inscrições públicas seguem no Ecobooking (config inscricoes_site = sim liga).
+  if (origem === 'site' && !inscricoesSiteLigadas()) {
+    throw new Error('As inscrições ainda são feitas pelo sistema atual (caminhadas.info).');
+  }
   const f = validarFicha(d);
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -269,12 +274,21 @@ function autenticar(d) {
   }
 }
 
-function senhaAdmin() {
+/** Valor de uma chave da aba config ('' se não existir). */
+function valorConfig(chave) {
   const id = planilhas().config;
   if (!id) return '';
   const linhas = SpreadsheetApp.openById(id).getSheetByName('config').getDataRange().getDisplayValues();
-  const l = linhas.find(r => r[0] === 'senha_admin');
-  return l ? String(l[1]) : '';
+  const l = linhas.find(r => r[0] === chave);
+  return l ? String(l[1]).trim() : '';
+}
+
+function senhaAdmin() {
+  return valorConfig('senha_admin');
+}
+
+function inscricoesSiteLigadas() {
+  return valorConfig('inscricoes_site').toLowerCase() === 'sim';
 }
 
 function gestorEntrar(d) {

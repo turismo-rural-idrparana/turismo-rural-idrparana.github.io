@@ -15,6 +15,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const num = n => Number(n || 0).toLocaleString('pt-BR');
 const ROTULO = { producao: 'Confirmada', previsto: 'Prevista', cancelado: 'Cancelada' };
 let eventos = [];
+let inscricoesNoSite = false; // virada oficial: config inscricoes_site = sim
 
 async function api(params) {
   if (!API_URL) throw new Error('Backend ainda não configurado.');
@@ -64,7 +65,7 @@ function blocoTexto(titulo, html) {
 }
 function abertas(e) {
   const hoje = new Date().toISOString().slice(0, 10);
-  return e.status === 'producao' && (!e.evento_data_inicio_inscricoes || e.evento_data_inicio_inscricoes <= hoje)
+  return inscricoesNoSite && e.status === 'producao' && (!e.evento_data_inicio_inscricoes || e.evento_data_inicio_inscricoes <= hoje)
     && (!e.evento_data_termino_inscricoes || hoje <= e.evento_data_termino_inscricoes);
 }
 
@@ -121,7 +122,8 @@ async function abrirEvento(id) {
       <dl>${linhas.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
       ${blocoTexto('Como chegar', e.evento_como_chegar)}
       ${blocoTexto('Observações', e.evento_observacao)}
-      ${abertas(e) ? ficha(e) : ''}`;
+      ${abertas(e) ? ficha(e) : (e.status === 'producao' && !inscricoesNoSite
+        ? '<p class="aviso">As inscrições deste evento ainda são feitas pelo sistema atual (caminhadas.info).</p>' : '')}`;
     const form = corpo.querySelector('form');
     if (form) form.addEventListener('submit', ev => enviarFicha(ev, e, ano));
   } catch (err) {
@@ -176,7 +178,8 @@ async function iniciar() {
   $('#lista').addEventListener('click', ev => { const c = ev.target.closest('.card'); if (c) abrirEvento(c.dataset.id); });
   $('#dlg').addEventListener('click', ev => { if (ev.target.id === 'dlg' || ev.target.closest('.fechar')) $('#dlg').close(); });
   try {
-    const anos = await api({ acao: 'anos' });
+    const [anos, cfg] = await Promise.all([api({ acao: 'anos' }), api({ acao: 'config' })]);
+    inscricoesNoSite = cfg.inscricoes_site === true;
     const atual = String(new Date().getFullYear());
     $('#f-ano').innerHTML = anos.map(a => `<option ${String(a) === atual ? 'selected' : ''}>${a}</option>`).join('');
     await carregarAno($('#f-ano').value);

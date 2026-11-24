@@ -22,6 +22,8 @@ Só campos públicos saem pelo `doGet`. Dados de inscritos exigem a senha do eve
 
 ## Operação
 
+- **Virada oficial**: na planilha `Caminhadas IDR - config`, aba `config`, acrescentar a linha `inscricoes_site | sim`. Sem ela, o site mostra os eventos mas as inscrições públicas ficam no Ecobooking (a área do gestor e a inscrição na mesa continuam funcionando).
+
 - Novo evento: acrescentar uma linha na aba `eventos` do ano (status `producao` para abrir inscrições,
   datas `evento_data_inicio_inscricoes`/`evento_data_termino_inscricoes` em AAAA-MM-DD, `senha_gestor` com 10+ caracteres).
 - Ano novo: criar a planilha `Caminhadas IDR - AAAA` com a aba `eventos` e o mesmo cabeçalho.
